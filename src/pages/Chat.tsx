@@ -34,20 +34,54 @@ const Chat = () => {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const allMessages = [...messages, userMessage];
+    setMessages(allMessages);
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const assistantMessage: Message = {
+    try {
+      const response = await fetch('https://functions.poehali.dev/9b208be1-9e24-4eae-831f-7712b144da6c', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: allMessages.map(m => ({ role: m.role, content: m.content })),
+          model: 'gpt-3.5-turbo',
+          temperature: 0.7,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.message) {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: data.message,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else {
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: data.error || 'Произошла ошибка. Попробуйте позже.',
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Это демонстрационный ответ. Интегрируйте API для реальных ответов.',
+        content: 'Не удалось подключиться к серверу. Проверьте интернет-соединение.',
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return (

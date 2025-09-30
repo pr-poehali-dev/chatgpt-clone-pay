@@ -1,0 +1,155 @@
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import Icon from '@/components/ui/icon';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+const Chat = () => {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      role: 'assistant',
+      content: 'Привет! Я AI-ассистент. Чем могу помочь?',
+      timestamp: new Date(),
+    },
+  ]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setIsTyping(true);
+
+    setTimeout(() => {
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'Это демонстрационный ответ. Интегрируйте API для реальных ответов.',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+      setIsTyping(false);
+    }, 1500);
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-background">
+      <div className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full gradient-purple-blue flex items-center justify-center animate-glow">
+              <Icon name="Sparkles" size={20} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">AI Chat</h1>
+              <p className="text-sm text-muted-foreground">Всегда на связи</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ScrollArea className="flex-1 container mx-auto px-4">
+        <div className="max-w-3xl mx-auto py-8 space-y-6">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex gap-4 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+            >
+              <Avatar className="w-10 h-10">
+                {message.role === 'assistant' ? (
+                  <div className="w-full h-full gradient-purple-blue flex items-center justify-center">
+                    <Icon name="Bot" size={20} className="text-white" />
+                  </div>
+                ) : (
+                  <>
+                    <AvatarImage src="/img/8c100864-7dc0-44be-a960-4e30acaf26a4.jpg" />
+                    <AvatarFallback>U</AvatarFallback>
+                  </>
+                )}
+              </Avatar>
+              <div
+                className={`flex-1 max-w-[70%] ${
+                  message.role === 'user' ? 'text-right' : ''
+                }`}
+              >
+                <div
+                  className={`inline-block px-4 py-3 rounded-2xl ${
+                    message.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-card border border-border'
+                  }`}
+                >
+                  <p className="text-sm leading-relaxed">{message.content}</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 px-1">
+                  {message.timestamp.toLocaleTimeString('ru-RU', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </div>
+            </div>
+          ))}
+
+          {isTyping && (
+            <div className="flex gap-4">
+              <Avatar className="w-10 h-10">
+                <div className="w-full h-full gradient-purple-blue flex items-center justify-center">
+                  <Icon name="Bot" size={20} className="text-white" />
+                </div>
+              </Avatar>
+              <div className="bg-card border border-border px-4 py-3 rounded-2xl">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+
+      <div className="border-t border-border/50 bg-card/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="max-w-3xl mx-auto flex gap-3">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              placeholder="Напишите сообщение..."
+              className="flex-1 bg-background border-border"
+            />
+            <Button
+              onClick={handleSend}
+              className="gradient-purple-blue hover:opacity-90 transition-opacity"
+              disabled={!input.trim()}
+            >
+              <Icon name="Send" size={18} />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Chat;

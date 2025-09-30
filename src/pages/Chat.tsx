@@ -13,8 +13,6 @@ interface Message {
   timestamp: Date;
 }
 
-const OPENAI_API_KEY = 'sk-qwkUqWVRBj6pocO3N6INtxuXes7mnlJq';
-
 const Chat = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([
@@ -50,51 +48,27 @@ const Chat = () => {
     setInput('');
     setIsTyping(true);
 
-    try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: allMessages.map(m => ({ role: m.role, content: m.content })),
-          temperature: 0.7,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.choices && data.choices[0]) {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: data.choices[0].message.content,
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-      } else {
-        const errorMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: data.error?.message || 'Произошла ошибка при обращении к OpenAI',
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, errorMessage]);
-      }
-    } catch (error) {
-      console.error('Ошибка:', error);
-      const errorMessage: Message = {
+    setTimeout(() => {
+      const responses = [
+        'Это отличный вопрос! Дайте подумаю...',
+        'Интересно! Вот что я могу предложить по этому поводу.',
+        'Понимаю вас. Вот моя рекомендация.',
+        'Отлично! Давайте разберём это подробнее.',
+        'Хороший вопрос! Вот что стоит учесть.',
+      ];
+      
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      
+      const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Не удалось подключиться к OpenAI. Проверьте API ключ.',
+        content: `${randomResponse} (Это демо-режим. Для реальных AI ответов требуется настройка backend с OpenAI API)`,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
+      
+      setMessages((prev) => [...prev, assistantMessage]);
       setIsTyping(false);
-    }
+    }, 1500);
   };
 
   return (

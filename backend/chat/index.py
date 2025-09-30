@@ -29,6 +29,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Access-Control-Allow-Headers': 'Content-Type',
                 'Access-Control-Max-Age': '86400'
             },
+            'isBase64Encoded': False,
             'body': ''
         }
     
@@ -36,6 +37,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             'statusCode': 405,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'isBase64Encoded': False,
             'body': json.dumps({'error': 'Method not allowed'})
         }
     
@@ -44,46 +46,58 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             'statusCode': 500,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'isBase64Encoded': False,
             'body': json.dumps({'error': 'OPENAI_API_KEY not configured'})
         }
     
-    body_data = json.loads(event.get('body', '{}'))
-    chat_request = ChatRequest(**body_data)
-    
-    import urllib.request
-    import urllib.error
-    
-    openai_messages = [{'role': msg.role, 'content': msg.content} for msg in chat_request.messages]
-    
-    request_payload = {
-        'model': chat_request.model,
-        'messages': openai_messages,
-        'temperature': chat_request.temperature
-    }
-    
-    req = urllib.request.Request(
-        'https://api.openai.com/v1/chat/completions',
-        data=json.dumps(request_payload).encode('utf-8'),
-        headers={
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {api_key}'
+    try:
+        body_data = json.loads(event.get('body', '{}'))
+        chat_request = ChatRequest(**body_data)
+        
+        import urllib.request
+        import urllib.error
+        
+        openai_messages = [{'role': msg.role, 'content': msg.content} for msg in chat_request.messages]
+        
+        request_payload = {
+            'model': chat_request.model,
+            'messages': openai_messages,
+            'temperature': chat_request.temperature
         }
-    )
-    
-    response = urllib.request.urlopen(req)
-    response_data = json.loads(response.read().decode('utf-8'))
-    
-    assistant_message = response_data['choices'][0]['message']['content']
-    
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        },
-        'isBase64Encoded': False,
-        'body': json.dumps({
-            'message': assistant_message,
-            'model': chat_request.model
-        })
-    }
+        
+        req = urllib.request.Request(
+            'https://api.openai.com/v1/chat/completions',
+            data=json.dumps(request_payload).encode('utf-8'),
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}'
+            }
+        )
+        
+        response = urllib.request.urlopen(req)
+        response_data = json.loads(response.read().decode('utf-8'))
+        
+        assistant_message = response_data['choices'][0]['message']['content']
+        
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'isBase64Encoded': False,
+            'body': json.dumps({
+                'message': assistant_message,
+                'model': chat_request.model
+            })
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'isBase64Encoded': False,
+            'body': json.dumps({'error': str(e)})
+        }

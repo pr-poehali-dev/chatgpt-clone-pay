@@ -13,6 +13,8 @@ interface Message {
   timestamp: Date;
 }
 
+const OPENAI_API_KEY = 'sk-qwkUqWVRBj6pocO3N6INtxuXes7mnlJq';
+
 const Chat = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([
@@ -49,28 +51,26 @@ const Chat = () => {
     setIsTyping(true);
 
     try {
-      console.log('Отправка запроса на сервер...');
-      const response = await fetch('https://functions.poehali.dev/9b208be1-9e24-4eae-831f-7712b144da6c', {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          messages: allMessages.map(m => ({ role: m.role, content: m.content })),
           model: 'gpt-3.5-turbo',
+          messages: allMessages.map(m => ({ role: m.role, content: m.content })),
           temperature: 0.7,
         }),
       });
 
-      console.log('Статус ответа:', response.status);
       const data = await response.json();
-      console.log('Данные ответа:', data);
 
-      if (response.ok && data.message) {
+      if (response.ok && data.choices && data.choices[0]) {
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: data.message,
+          content: data.choices[0].message.content,
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, assistantMessage]);
@@ -78,17 +78,17 @@ const Chat = () => {
         const errorMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: data.error || `Ошибка сервера (код ${response.status})`,
+          content: data.error?.message || 'Произошла ошибка при обращении к OpenAI',
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, errorMessage]);
       }
     } catch (error) {
-      console.error('Ошибка fetch:', error);
+      console.error('Ошибка:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `Ошибка подключения: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}. Убедитесь, что API ключ OpenAI добавлен в секреты проекта.`,
+        content: 'Не удалось подключиться к OpenAI. Проверьте API ключ.',
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);

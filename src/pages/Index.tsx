@@ -26,7 +26,7 @@ const Index = () => {
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
               <Button size="lg" className="gradient-purple-blue hover:opacity-90 animate-glow gap-2" asChild>
-                <Link to="/chat">
+                <Link to="/auth">
                   <Icon name="MessageSquare" size={20} />
                   Начать чат
                 </Link>
@@ -128,7 +128,7 @@ const Index = () => {
               Присоединяйтесь к тысячам пользователей, которые уже используют AI Chat
             </p>
             <Button size="lg" className="gradient-purple-blue hover:opacity-90 animate-glow gap-2" asChild>
-              <Link to="/chat">
+              <Link to="/auth">
                 <Icon name="Rocket" size={20} />
                 Начать бесплатно
               </Link>

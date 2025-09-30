@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Icon from '@/components/ui/icon';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useNavigate } from 'react-router-dom';
 
 interface Message {
   id: string;
@@ -13,6 +14,7 @@ interface Message {
 }
 
 const Chat = () => {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -23,6 +25,13 @@ const Chat = () => {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+
+  useEffect(() => {
+    const isAuth = localStorage.getItem('isAuthenticated');
+    if (!isAuth) {
+      navigate('/auth');
+    }
+  }, [navigate]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -89,6 +98,14 @@ const Chat = () => {
       <div className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/')}
+              className="hover:bg-primary/10"
+            >
+              <Icon name="ArrowLeft" size={20} />
+            </Button>
             <div className="w-10 h-10 rounded-full gradient-purple-blue flex items-center justify-center animate-glow">
               <Icon name="Sparkles" size={20} className="text-white" />
             </div>
@@ -97,6 +114,18 @@ const Chat = () => {
               <p className="text-sm text-muted-foreground">Всегда на связи</p>
             </div>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              localStorage.removeItem('isAuthenticated');
+              navigate('/auth');
+            }}
+            className="gap-2"
+          >
+            <Icon name="LogOut" size={16} />
+            Выйти
+          </Button>
         </div>
       </div>
 

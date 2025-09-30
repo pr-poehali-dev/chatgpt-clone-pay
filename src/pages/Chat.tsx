@@ -49,6 +49,7 @@ const Chat = () => {
     setIsTyping(true);
 
     try {
+      console.log('Отправка запроса на сервер...');
       const response = await fetch('https://functions.poehali.dev/9b208be1-9e24-4eae-831f-7712b144da6c', {
         method: 'POST',
         headers: {
@@ -61,7 +62,9 @@ const Chat = () => {
         }),
       });
 
+      console.log('Статус ответа:', response.status);
       const data = await response.json();
+      console.log('Данные ответа:', data);
 
       if (response.ok && data.message) {
         const assistantMessage: Message = {
@@ -75,16 +78,17 @@ const Chat = () => {
         const errorMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: data.error || 'Произошла ошибка. Попробуйте позже.',
+          content: data.error || `Ошибка сервера (код ${response.status})`,
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, errorMessage]);
       }
     } catch (error) {
+      console.error('Ошибка fetch:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Не удалось подключиться к серверу. Проверьте интернет-соединение.',
+        content: `Ошибка подключения: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}. Убедитесь, что API ключ OpenAI добавлен в секреты проекта.`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);

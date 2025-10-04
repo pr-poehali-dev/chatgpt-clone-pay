@@ -13,16 +13,28 @@ interface Message {
   timestamp: Date;
 }
 
+const OPENAI_API_KEY = 'sk-qwkUqWVRBj6pocO3N6INtxuXes7mnlJq';
+
 const Chat = () => {
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Привет! Я AI-ассистент. Чем могу помочь?',
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = localStorage.getItem('chatMessages');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.map((m: any) => ({
+        ...m,
+        timestamp: new Date(m.timestamp),
+      }));
+    }
+    return [
+      {
+        id: '1',
+        role: 'assistant',
+        content: 'Привет! Я AI-ассистент на основе OpenAI. Чем могу помочь?',
+        timestamp: new Date(),
+      },
+    ];
+  });
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
@@ -32,6 +44,10 @@ const Chat = () => {
       navigate('/auth');
     }
   }, [navigate]);
+
+  useEffect(() => {
+    localStorage.setItem('chatMessages', JSON.stringify(messages));
+  }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -48,27 +64,50 @@ const Chat = () => {
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const responses = [
-        'Это отличный вопрос! Дайте подумаю...',
-        'Интересно! Вот что я могу предложить по этому поводу.',
-        'Понимаю вас. Вот моя рекомендация.',
-        'Отлично! Давайте разберём это подробнее.',
-        'Хороший вопрос! Вот что стоит учесть.',
-      ];
-      
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      
-      const assistantMessage: Message = {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: allMessages.map(m => ({
+            role: m.role,
+            content: m.content,
+          })),
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.choices && data.choices[0]) {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: data.choices[0].message.content,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      }
+    } catch (error) {
+      console.error('OpenAI Error:', error);
+      const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `${randomResponse} (Это демо-режим. Для реальных AI ответов требуется настройка backend с OpenAI API)`,
+        content: 'Извините, произошла ошибка при обращении к OpenAI. Проверьте консоль для деталей.',
         timestamp: new Date(),
       };
-      
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -92,18 +131,39 @@ const Chat = () => {
               <p className="text-sm text-muted-foreground">Всегда на связи</p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              localStorage.removeItem('isAuthenticated');
-              navigate('/auth');
-            }}
-            className="gap-2"
-          >
-            <Icon name="LogOut" size={16} />
-            Выйти
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setMessages([
+                  {
+                    id: '1',
+                    role: 'assistant',
+                    content: 'Привет! Я AI-ассистент на основе OpenAI. Чем могу помочь?',
+                    timestamp: new Date(),
+                  },
+                ]);
+                localStorage.removeItem('chatMessages');
+              }}
+              className="gap-2"
+            >
+              <Icon name="Trash2" size={16} />
+              Очистить
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                localStorage.removeItem('isAuthenticated');
+                navigate('/auth');
+              }}
+              className="gap-2"
+            >
+              <Icon name="LogOut" size={16} />
+              Выйти
+            </Button>
+          </div>
         </div>
       </div>
 
